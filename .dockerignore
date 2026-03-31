@@ -1,0 +1,10 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.dockerignore
+implementation_plan.md
+task.md
+walkthrough.md
