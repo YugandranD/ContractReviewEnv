@@ -1,5 +1,6 @@
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+import uvicorn
 from fastapi import FastAPI, HTTPException
 from models import Action
 sys.path.insert(0, os.path.dirname(__file__))
@@ -32,6 +33,13 @@ def step(action: Action):
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+def main():
+    """Entry point for the OpenEnv server."""
+    uvicorn.run("server.app:app", host="0.0.0.0", port=7860, reload=False)
+
+if __name__ == "__main__":
+    main()
 
 @app.get("/state")
 def state():
