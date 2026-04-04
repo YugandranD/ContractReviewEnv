@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openenv-contract-review-env"
+version = "0.1.0"
+description = "Contract review environment for OpenEnv with AI-powered clause analysis"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.5.0",
+    "openai>=1.0.0",
+    "python-dotenv>=1.0.0",
+    "litellm>=1.0.0",
+    "requests>=2.31.0",
+    "httpx>=0.25.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[tool.setuptools]
+include-package-data = true
+packages = ["server", "server.contracts"]
+py-modules = ["models", "client"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.yml", "*.md", "*.txt"]
+"server.contracts" = ["*.py"]
