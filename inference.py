@@ -12,11 +12,13 @@ from server.tasks import ALL_TASKS
 
 load_dotenv()
 
-# Configurable model mapping, defaults to OpenAI's gpt-4o-mini as required by judges
-MODEL = os.environ.get("MODEL", "gpt-4o-mini")
+# Configurable environment variables as required by the checklist
+API_BASE_URL = os.getenv("API_BASE_URL", "https://loki15-contractreviewenv.hf.space")
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini") # Standard baseline model
+HF_TOKEN = os.getenv("HF_TOKEN")
 
-# The OpenAI client automatically picks up OPENAI_API_KEY and OPENAI_BASE_URL from the environment.
-client = OpenAI()
+# Initialize OpenAI client with the specific base_url and api_key (HF_TOKEN)
+client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
 SYSTEM_PROMPT = """You are a senior legal contract review specialist with 15+ years of experience.
 Review each contract clause and respond ONLY with valid JSON — no markdown, no preamble.
 
@@ -116,7 +118,7 @@ def agent_fn(obs: Observation) -> Action:
     for attempt in range(max_retries):
         try:
             response = client.chat.completions.create(
-                model=MODEL,
+                model=MODEL_NAME,
                 messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": build_prompt(obs)}],
                 temperature=0.0, max_tokens=600
             )
@@ -138,17 +140,28 @@ def agent_fn(obs: Observation) -> Action:
 
 def main():
     sep = "=" * 60
-    print(f"\n{sep}\n  ContractReviewEnv Baseline [{MODEL}]\n{sep}\n")
+    print(f"\n{sep}\n  ContractReviewEnv Baseline [{MODEL_NAME}]\n{sep}\n")
+    
     scores = []
     for TaskClass in ALL_TASKS:
         task = TaskClass()
-        print(f">> {task.task_id} [{task.difficulty}]")
-        result = task.run(agent_fn)
+        print(f"START {json.dumps({'task_id': task.task_id, 'model': MODEL_NAME, 'timestamp': time.time()})}")
+        print(f">> Running {task.task_id}...")
+        
+        # We wrap the agent_fn to provide STEP logs
+        def instrumented_agent(obs: Observation) -> Action:
+            action = agent_fn(obs)
+            # The environment will provide the reward and done in its own observation metadata
+            # but for the logs we provide the current state
+            print(f"STEP {json.dumps({'task_id': task.task_id, 'clause_id': obs.current_clause['clause_id'], 'action': action.model_dump()})}")
+            return action
+
+        result = task.run(instrumented_agent)
         scores.append(result["score"])
-        print(f"  Score: {result['score']:.3f}")
-        for k, v in result.items():
-            if k not in ("task_id", "score"): print(f"  {k}: {v}")
-        print()
+        
+        print(f"END {json.dumps({'task_id': task.task_id, 'score': result['score'], 'metrics': result})}")
+        print(f"  Score: {result['score']:.3f}\n")
+        
     avg = sum(scores) / len(scores)
     print(f"{sep}\n  AVERAGE: {avg:.3f} | SCORES: {' | '.join(f'{s:.3f}' for s in scores)}\n{sep}\n")
 

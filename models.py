@@ -77,6 +77,9 @@ class Observation(BaseModel):
     running_f1: float
     flags_so_far: list[dict]
     time_step: int
+    done: bool = False
+    reward: Optional[float] = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 class StepResult(BaseModel):
     observation: Observation

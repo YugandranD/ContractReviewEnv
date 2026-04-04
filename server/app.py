@@ -15,17 +15,20 @@ def health_check():
 @app.post("/reset")
 def reset():
     obs = environment.reset()
-    return {"observation": obs.model_dump()}
+    return {
+        "observation": obs.model_dump(),
+        "reward": None,
+        "done": False
+    }
 
 @app.post("/step")
 def step(action: Action):
     try:
-        obs, reward, done, info = environment.step(action)
+        step_result = environment.step(action)
         return {
-            "observation": obs.model_dump(),
-            "reward": reward,
-            "done": done,
-            "info": info
+            "observation": step_result.observation.model_dump(),
+            "reward": step_result.reward,
+            "done": step_result.done
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

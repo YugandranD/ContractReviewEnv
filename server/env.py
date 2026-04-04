@@ -36,7 +36,7 @@ class ContractReviewEnv:
         self._time_step = 0
         self._done = False
         self._flags = []
-        return self._make_observation()
+        return self._make_observation(done=False, reward=None, info={})
 
     def step(self, action: Action) -> StepResult:
         if self._done:
@@ -55,24 +55,29 @@ class ContractReviewEnv:
         self._clause_index += 1
         self._time_step += 1
         self._done = self._clause_index >= len(self.contract.clauses)
-        obs = self._make_observation() if not self._done else self._make_terminal_obs()
+        
+        info = {
+            "reward_breakdown": reward_breakdown,
+            "ground_truth": {
+                "risk_level": clause.risk_level,
+                "risk_type": clause.risk_type,
+                "should_flag": clause.risk_level != RiskLevel.NONE,
+                "is_missing_protection": clause.is_missing_protection,
+                "annotation": clause.annotation,
+                "is_buried": clause.is_buried,
+            },
+            "tp": self._tp, "fp": self._fp, "fn": self._fn,
+            "running_f1": self._f1(),
+        }
+        
+        step_reward = reward_breakdown["step_reward"]
+        obs = self._make_observation(done=self._done, reward=step_reward, info=info) if not self._done else self._make_terminal_obs(done=True, reward=step_reward, info=info)
+        
         return StepResult(
             observation=obs,
-            reward=reward_breakdown["step_reward"],
+            reward=step_reward,
             done=self._done,
-            info={
-                "reward_breakdown": reward_breakdown,
-                "ground_truth": {
-                    "risk_level": clause.risk_level,
-                    "risk_type": clause.risk_type,
-                    "should_flag": clause.risk_level != RiskLevel.NONE,
-                    "is_missing_protection": clause.is_missing_protection,
-                    "annotation": clause.annotation,
-                    "is_buried": clause.is_buried,
-                },
-                "tp": self._tp, "fp": self._fp, "fn": self._fn,
-                "running_f1": self._f1(),
-            }
+            info=info
         )
 
     def state(self) -> EnvState:
@@ -143,7 +148,7 @@ class ContractReviewEnv:
     def _clause_to_dict(self, clause: Clause) -> dict:
         return {"clause_id": clause.clause_id, "clause_type": clause.clause_type, "text": clause.text}
 
-    def _make_observation(self) -> Observation:
+    def _make_observation(self, done: bool = False, reward: Optional[float] = None, info: Optional[dict] = None) -> Observation:
         clause = self.contract.clauses[self._clause_index]
         return Observation(
             contract_id=self.contract.contract_id, contract_type=self.contract.contract_type,
@@ -151,9 +156,10 @@ class ContractReviewEnv:
             current_clause=self._clause_to_dict(clause), clause_index=self._clause_index,
             total_clauses=len(self.contract.clauses), clauses_reviewed=self._clause_index,
             running_f1=self._f1(), flags_so_far=self._flags.copy(), time_step=self._time_step,
+            done=done, reward=reward, metadata=info or {}
         )
 
-    def _make_terminal_obs(self) -> Observation:
+    def _make_terminal_obs(self, done: bool = True, reward: Optional[float] = None, info: Optional[dict] = None) -> Observation:
         return Observation(
             contract_id=self.contract.contract_id, contract_type=self.contract.contract_type,
             contract_title=self.contract.title, parties=self.contract.parties,
@@ -161,4 +167,5 @@ class ContractReviewEnv:
             clause_index=self._clause_index, total_clauses=len(self.contract.clauses),
             clauses_reviewed=self._clause_index, running_f1=self._f1(),
             flags_so_far=self._flags.copy(), time_step=self._time_step,
+            done=done, reward=reward, metadata=info or {}
         )

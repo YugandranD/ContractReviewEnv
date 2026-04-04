@@ -16,11 +16,12 @@ class ContractReviewEnvClient:
         response = requests.post(f"{self.base_url}/step", json=action.model_dump())
         response.raise_for_status()
         data = response.json()
+        obs = Observation(**data["observation"])
         return StepResult(
-            observation=Observation(**data["observation"]),
-            reward=float(data["reward"]),
-            done=bool(data["done"]),
-            info=data["info"]
+            observation=obs,
+            reward=data["reward"],
+            done=data["done"],
+            info=obs.metadata
         )
 
     def state(self) -> EnvState:
