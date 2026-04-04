@@ -3,51 +3,9 @@ Synthetic Contract Dataset with Golden Clause Annotations
 Contracts: NDA, SaaS Agreement, Employment Agreement
 """
 
-from dataclasses import dataclass
-from typing import Optional
-from enum import Enum
-
-class RiskLevel(str, Enum):
-    HIGH   = "high"
-    MEDIUM = "medium"
-    LOW    = "low"
-    NONE   = "none"
-
-class RiskType(str, Enum):
-    LIABILITY_CAP        = "liability_cap"
-    IP_OWNERSHIP         = "ip_ownership"
-    TERMINATION          = "termination"
-    INDEMNIFICATION      = "indemnification"
-    GOVERNING_LAW        = "governing_law"
-    DATA_PRIVACY         = "data_privacy"
-    NON_COMPETE          = "non_compete"
-    AMBIGUOUS_LANGUAGE   = "ambiguous_language"
-    MISSING_PROTECTION   = "missing_protection"
-    UNILATERAL_CHANGE    = "unilateral_change"
-    AUTO_RENEWAL         = "auto_renewal"
-    PAYMENT_TERMS        = "payment_terms"
-    CONFIDENTIALITY      = "confidentiality"
-    DISPUTE_RESOLUTION   = "dispute_resolution"
-    CLEAN                = "clean"
-
-@dataclass
-class Clause:
-    clause_id: str
-    clause_type: str
-    text: str
-    risk_level: RiskLevel
-    risk_type: RiskType
-    is_missing_protection: bool
-    annotation: str
-    is_buried: bool = False
-
-@dataclass
-class Contract:
-    contract_id: str
-    contract_type: str
-    title: str
-    parties: dict
-    clauses: list
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+from models import RiskLevel, RiskType, Clause, Contract
 
 # CONTRACT 1 — MUTUAL NDA (Easy Task)
 NDA_CONTRACT = Contract(

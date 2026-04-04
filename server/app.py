@@ -1,5 +1,9 @@
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from fastapi import FastAPI, HTTPException
-from env import ContractReviewEnv, Action
+from models import Action
+sys.path.insert(0, os.path.dirname(__file__))
+from env import ContractReviewEnv
 
 app = FastAPI(title="ContractReviewEnv OpenEnv Wrapper")
 environment = ContractReviewEnv()

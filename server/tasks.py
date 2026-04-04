@@ -4,8 +4,10 @@
 
 from __future__ import annotations
 import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+from models import Action, FlaggedRisk, RiskLevel, RiskType
 sys.path.insert(0, os.path.dirname(__file__))
-from env import ContractReviewEnv, Action, FlaggedRisk, RiskLevel, RiskType
+from env import ContractReviewEnv
 
 class Task1_NDA_HighRisk:
     task_id = "task_1_nda_high_risk"

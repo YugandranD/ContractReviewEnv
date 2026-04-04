@@ -4,7 +4,7 @@ description: >
   AI agent reviews legal contracts clause by clause, flagging risks
   scored against expert annotations using Precision, Recall, and F1.
 tags: [openenv, legal, nlp, contract-review, real-world]
-entry_point: env:ContractReviewEnv
+entry_point: server.env:ContractReviewEnv
 baseline_script: inference.py
 dockerfile: Dockerfile
 contracts:

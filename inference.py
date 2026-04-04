@@ -7,8 +7,8 @@ import os, json
 from dotenv import load_dotenv
 from openai import OpenAI
 import openai
-from env import ContractReviewEnv, Action, FlaggedRisk, RiskLevel, RiskType, Observation
-from tasks import ALL_TASKS
+from models import Action, FlaggedRisk, RiskLevel, RiskType, Observation
+from server.tasks import ALL_TASKS
 
 load_dotenv()
 
