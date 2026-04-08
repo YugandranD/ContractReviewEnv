@@ -7,7 +7,9 @@ import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 from models import Action, FlaggedRisk, RiskLevel, RiskType
 sys.path.insert(0, os.path.dirname(__file__))
-from env import ContractReviewEnv
+from env import ContractReviewEnv, clamp_score
+
+
 
 class Task1_NDA_HighRisk:
     task_id = "task_1_nda_high_risk"
@@ -28,7 +30,7 @@ class Task1_NDA_HighRisk:
                 flagged_high.add(action.clause_id)
             obs = result.observation
         recall = len(flagged_high) / len(self.HIGH_RISK_IDS)
-        return {"task_id": self.task_id, "score": round(recall, 3), "high_risk_caught": list(flagged_high), "high_risk_missed": list(self.HIGH_RISK_IDS - flagged_high), "passed": recall >= 0.67}
+        return {"task_id": self.task_id, "score": clamp_score(recall), "high_risk_caught": list(flagged_high), "high_risk_missed": list(self.HIGH_RISK_IDS - flagged_high), "passed": recall >= 0.67}
 
 class Task2_SaaS_FullReview:
     task_id = "task_2_saas_full_review"
@@ -49,7 +51,7 @@ class Task2_SaaS_FullReview:
             obs = result.observation
         state = env.state()
         bonus = 0.10 if indemnification_flagged else 0.0
-        score = round(min(state.running_f1 + bonus, 1.0), 3)
+        score = clamp_score(state.running_f1 + bonus)
         return {"task_id": self.task_id, "score": score, "base_f1": state.running_f1, "precision": state.running_precision, "recall": state.running_recall, "tp": state.true_positives, "fp": state.false_positives, "fn": state.false_negatives, "indemnification_flagged": indemnification_flagged}
 
 class Task3_Employment_Adversarial:
@@ -85,7 +87,7 @@ class Task3_Employment_Adversarial:
         buried_mult = 1.25 if buried_caught else 0.80
         key_recall = len(key_risks_caught) / len(self.KEY_HIGH_RISK)
         sev_acc = (severity_correct / severity_total) if severity_total > 0 else 0.0
-        score = round(min(state.running_f1 * buried_mult * 0.5 + key_recall * 0.3 + sev_acc * 0.2, 1.0), 3)
+        score = clamp_score(state.running_f1 * buried_mult * 0.5 + key_recall * 0.3 + sev_acc * 0.2)
         return {"task_id": self.task_id, "score": score, "base_f1": state.running_f1, "buried_clause_caught": buried_caught, "buried_multiplier": buried_mult, "key_risks_caught": list(key_risks_caught), "key_recall": round(key_recall, 3), "severity_accuracy": round(sev_acc, 3)}
 
 ALL_TASKS = [Task1_NDA_HighRisk, Task2_SaaS_FullReview, Task3_Employment_Adversarial]

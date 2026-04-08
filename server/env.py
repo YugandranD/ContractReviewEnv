@@ -11,6 +11,10 @@ from models import FlaggedRisk, Action, Observation, StepResult, EnvState, RiskL
 sys.path.insert(0, os.path.dirname(__file__))
 from contracts.contract_data import ALL_CONTRACTS
 
+def clamp_score(score: float) -> float:
+    """Ensure score is strictly between 0 and 1 as required by OpenEnv validator."""
+    return max(0.01, min(0.99, score))
+
 class ContractReviewEnv:
     metadata = {
         "name": "ContractReviewEnv",
@@ -88,9 +92,9 @@ class ContractReviewEnv:
             true_positives=self._tp,
             false_positives=self._fp,
             false_negatives=self._fn,
-            running_precision=round(self._precision(), 3),
-            running_recall=round(self._recall(), 3),
-            running_f1=round(self._f1(), 3),
+            running_precision=clamp_score(self._precision()),
+            running_recall=clamp_score(self._recall()),
+            running_f1=clamp_score(self._f1()),
             done=self._done,
         )
 
