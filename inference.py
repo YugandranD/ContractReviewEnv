@@ -103,7 +103,7 @@ def parse_action(raw: str, clause_id: str) -> Action:
             is_flagged = False; flagged_risk = None
         return Action(clause_id=clause_id, is_flagged=is_flagged, flagged_risk=flagged_risk, confidence=min(1.0, max(0.0, confidence)))
     except Exception as e:
-        print(f"  [PARSE ERROR] {e} | RAW: {raw[:100]}")
+        print(f"  [PARSE ERROR] {e} | RAW: {raw[:100]}", flush=True)
         return Action(clause_id=clause_id, is_flagged=False, confidence=0.3)
 
 import time
@@ -126,44 +126,49 @@ def agent_fn(obs: Observation) -> Action:
         except openai.RateLimitError as e:
             if attempt < max_retries - 1:
                 sleep_time = base_sleep * (2 ** attempt)
-                print(f"  [RATE LIMIT] Exceeded TPM. Sleeping for {sleep_time} seconds before retrying...")
+                print(f"  [RATE LIMIT] Exceeded TPM. Sleeping for {sleep_time} seconds before retrying...", flush=True)
                 time.sleep(sleep_time)
             else:
                 raise e
         except Exception as e:
             if attempt < max_retries - 1:
-                print(f"  [API ERROR] {e}. Retrying in 2 seconds...")
+                print(f"  [API ERROR] {e}. Retrying in 2 seconds...", flush=True)
                 time.sleep(2)
             else:
-                print(f"  [API ERROR FINAL] {e}")
+                print(f"  [API ERROR FINAL] {e}", flush=True)
                 return Action(clause_id=clause_id, is_flagged=False, confidence=0.3)
 
 def main():
     sep = "=" * 60
-    print(f"\n{sep}\n  ContractReviewEnv Baseline [{MODEL_NAME}]\n{sep}\n")
+    print(f"\n{sep}\n  ContractReviewEnv Baseline [{MODEL_NAME}]\n{sep}\n", flush=True)
     
     scores = []
     for TaskClass in ALL_TASKS:
         task = TaskClass()
-        print(f"START {json.dumps({'task_id': task.task_id, 'model': MODEL_NAME, 'timestamp': time.time()})}")
-        print(f">> Running {task.task_id}...")
+        print(f"[START] task={task.task_id}", flush=True)
+        print(f">> Running {task.task_id}...", flush=True)
         
+        step_counter = 0
+
         # We wrap the agent_fn to provide STEP logs
         def instrumented_agent(obs: Observation) -> Action:
+            nonlocal step_counter
             action = agent_fn(obs)
-            # The environment will provide the reward and done in its own observation metadata
-            # but for the logs we provide the current state
-            print(f"STEP {json.dumps({'task_id': task.task_id, 'clause_id': obs.current_clause['clause_id'], 'action': action.model_dump()})}")
+            step_counter += 1
+            # The environment provides the reward from the PREVIOUS step in the observation
+            # Using 0.0 for step 1
+            reward = obs.reward if obs.reward is not None else 0.0
+            print(f"[STEP] step={step_counter} reward={reward}", flush=True)
             return action
 
         result = task.run(instrumented_agent)
         scores.append(result["score"])
         
-        print(f"END {json.dumps({'task_id': task.task_id, 'score': result['score'], 'metrics': result})}")
-        print(f"  Score: {result['score']:.3f}\n")
+        print(f"[END] task={task.task_id} score={result['score']} steps={step_counter}", flush=True)
+        print(f"  Score: {result['score']:.3f}\n", flush=True)
         
     avg = sum(scores) / len(scores)
-    print(f"{sep}\n  AVERAGE: {avg:.3f} | SCORES: {' | '.join(f'{s:.3f}' for s in scores)}\n{sep}\n")
+    print(f"{sep}\n  AVERAGE: {avg:.3f} | SCORES: {' | '.join(f'{s:.3f}' for s in scores)}\n{sep}\n", flush=True)
 
 if __name__ == "__main__":
     main()
